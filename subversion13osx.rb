@@ -6,12 +6,6 @@ class Subversion13osx < Formula
   sha256 "bc50ce2c3faa7b1ae9103c432017df98dfd989c4239f9f8270bb3a314ed9e5bd"
   revision 1
 
-  bottle do
-    sha256 "138d0924e18d0994c2f50fefa8101e06573239a1937f972ee904bee0b84c79a3" => :catalina
-    sha256 "6a92e47f2ccaaf22f7afce12df4196d6c3623caccdd2c322983b8b479474302f" => :mojave
-    sha256 "eb8252001893f26f280241f9168a256c76999975c778a770922165587f7f1bac" => :high_sierra
-  end
-
   head do
     url "https://github.com/apache/subversion.git", :branch => "trunk"
 
@@ -191,15 +185,15 @@ index 29a6c0a..dd1a5a8 100644
      fwprefix = sysconfig.get_config_var('PYTHONFRAMEWORKPREFIX')
 
 diff --git a/subversion/libsvn_subr/io.c b/subversion/libsvn_subr/io.c
-index 4bff69a..9d6db8f 100644
+index 9d6db8f..4bff69a 100644
 --- a/subversion/libsvn_subr/io.c
 +++ b/subversion/libsvn_subr/io.c
 @@ -216,7 +216,7 @@ cstring_to_utf8(const char **path_utf8,
                  const char *path_apr,
                  apr_pool_t *pool)
  {
--#if defined(WIN32)
-+#if defined(WIN32) || defined(DARWIN)
+-#if defined(WIN32) || defined(DARWIN)
++#if defined(WIN32)
    *path_utf8 = path_apr;
    return SVN_NO_ERROR;
  #else
@@ -207,134 +201,134 @@ index 4bff69a..9d6db8f 100644
                     const char *parent,
                     apr_pool_t *pool)
  {
--#if defined(WIN32)
-+#if defined(WIN32) || defined(DARWIN)
+-#if defined(WIN32) || defined(DARWIN)
++#if defined(WIN32)
    *name_p = apr_pstrdup(pool, name);
    return SVN_NO_ERROR;
  #else
 diff --git a/subversion/libsvn_subr/path.c b/subversion/libsvn_subr/path.c
-index c286ecc..50a67de 100644
+index 50a67de..c286ecc 100644
 --- a/subversion/libsvn_subr/path.c
 +++ b/subversion/libsvn_subr/path.c
-@@ -40,9 +40,6 @@
+@@ -40,6 +40,9 @@
  
  #include "dirent_uri.h"
  
--#if defined(DARWIN)
--#include <CoreFoundation/CoreFoundation.h>
--#endif /* DARWIN */
++#if defined(DARWIN)
++#include <CoreFoundation/CoreFoundation.h>
++#endif /* DARWIN */
  
  /* The canonical empty path.  Can this be changed?  Well, change the empty
     test below and the path library will work, not so sure about the fs/wc
-@@ -1114,7 +1111,7 @@ svn_path_get_absolute(const char **pabsolute,
+@@ -1111,7 +1114,7 @@ svn_path_get_absolute(const char **pabsolute,
  }
  
  
--#if !defined(WIN32)
-+#if !defined(WIN32) && !defined(DARWIN)
+-#if !defined(WIN32) && !defined(DARWIN)
++#if !defined(WIN32)
  /** Get APR's internal path encoding. */
  static svn_error_t *
  get_path_encoding(svn_boolean_t *path_is_utf8, apr_pool_t *pool)
-@@ -1141,7 +1138,7 @@ svn_path_cstring_from_utf8(const char **path_apr,
+@@ -1138,7 +1141,7 @@ svn_path_cstring_from_utf8(const char **path_apr,
                             const char *path_utf8,
                             apr_pool_t *pool)
  {
--#if !defined(WIN32)
-+#if !defined(WIN32) && !defined(DARWIN)
+-#if !defined(WIN32) && !defined(DARWIN)
++#if !defined(WIN32)
    svn_boolean_t path_is_utf8;
    SVN_ERR(get_path_encoding(&path_is_utf8, pool));
    if (path_is_utf8)
-@@ -1150,7 +1147,7 @@ svn_path_cstring_from_utf8(const char **path_apr,
+@@ -1147,7 +1150,7 @@ svn_path_cstring_from_utf8(const char **path_apr,
        *path_apr = apr_pstrdup(pool, path_utf8);
        return SVN_NO_ERROR;
      }
--#if !defined(WIN32)
-+#if !defined(WIN32) && !defined(DARWIN)
+-#if !defined(WIN32) && !defined(DARWIN)
++#if !defined(WIN32)
    else
      return svn_utf_cstring_from_utf8(path_apr, path_utf8, pool);
  #endif
-@@ -1162,38 +1159,18 @@ svn_path_cstring_to_utf8(const char **path_utf8,
+@@ -1159,18 +1162,38 @@ svn_path_cstring_to_utf8(const char **path_utf8,
                           const char *path_apr,
                           apr_pool_t *pool)
  {
--#if defined(DARWIN)
--  /*
--    Special treatment for Mac OS X to support UTF-8 MAC encodings.
--    Convert any decomposed unicode characters into precomposed ones.
--    This will solve the problem that the 'svn status' command sometimes
--    cannot recognize the same file if it contains composed characters,
--    like Umlaut in some European languages.
--  */
--  CFMutableStringRef cfmsr = CFStringCreateMutable(NULL, 0);
--  CFStringAppendCString(cfmsr, path_apr, kCFStringEncodingUTF8);
--  CFStringNormalize(cfmsr, kCFStringNormalizationFormC);
--  CFIndex path_buff_size = 1 + CFStringGetMaximumSizeForEncoding(CFStringGetLength(cfmsr), kCFStringEncodingUTF8);
--  path_apr = apr_palloc(pool, path_buff_size);
--  CFStringGetCString(cfmsr, path_apr, path_buff_size, kCFStringEncodingUTF8);
--  CFRelease(cfmsr);
--  *path_utf8 = path_apr;
--  return SVN_NO_ERROR;
--#else
--  /* Use the default method on any other OS */
-- #if !defined(WIN32)
-+#if !defined(WIN32) && !defined(DARWIN)
+-#if !defined(WIN32) && !defined(DARWIN)
++#if defined(DARWIN)
++  /*
++    Special treatment for Mac OS X to support UTF-8 MAC encodings.
++    Convert any decomposed unicode characters into precomposed ones.
++    This will solve the problem that the 'svn status' command sometimes
++    cannot recognize the same file if it contains composed characters,
++    like Umlaut in some European languages.
++  */
++  CFMutableStringRef cfmsr = CFStringCreateMutable(NULL, 0);
++  CFStringAppendCString(cfmsr, path_apr, kCFStringEncodingUTF8);
++  CFStringNormalize(cfmsr, kCFStringNormalizationFormC);
++  CFIndex path_buff_size = 1 + CFStringGetMaximumSizeForEncoding(CFStringGetLength(cfmsr), kCFStringEncodingUTF8);
++  path_apr = apr_palloc(pool, path_buff_size);
++  CFStringGetCString(cfmsr, path_apr, path_buff_size, kCFStringEncodingUTF8);
++  CFRelease(cfmsr);
++  *path_utf8 = path_apr;
++  return SVN_NO_ERROR;
++#else
++  /* Use the default method on any other OS */
++ #if !defined(WIN32)
    svn_boolean_t path_is_utf8;
    SVN_ERR(get_path_encoding(&path_is_utf8, pool));
    if (path_is_utf8)
-- #endif
-+#endif
+-#endif
++ #endif
      {
        *path_utf8 = apr_pstrdup(pool, path_apr);
        return SVN_NO_ERROR;
      }
--  #if !defined(WIN32)
-+#if !defined(WIN32) && !defined(DARWIN)
+-#if !defined(WIN32) && !defined(DARWIN)
++  #if !defined(WIN32)
    else
      return svn_utf_cstring_to_utf8(path_utf8, path_apr, pool);
--  #endif
++  #endif
  #endif
  }
  
 diff --git a/subversion/svn/proplist-cmd.c b/subversion/svn/proplist-cmd.c
-index f498365..80e0364 100644
+index 80e0364..f498365 100644
 --- a/subversion/svn/proplist-cmd.c
 +++ b/subversion/svn/proplist-cmd.c
-@@ -98,11 +98,6 @@ proplist_receiver_xml(void *baton,
+@@ -98,6 +98,11 @@ proplist_receiver_xml(void *baton,
    else
      name_local = path;
  
--#if defined(DARWIN)
--  if (! is_url)
--    SVN_ERR(svn_path_cstring_to_utf8(&name_local, name_local, pool));
--#endif
--
++#if defined(DARWIN)
++  if (! is_url)
++    SVN_ERR(svn_path_cstring_to_utf8(&name_local, name_local, pool));
++#endif
++
    sb = NULL;
  
  
-@@ -142,11 +137,6 @@ proplist_receiver(void *baton,
+@@ -137,6 +142,11 @@ proplist_receiver(void *baton,
    else
      name_local = path;
  
--#if defined(DARWIN)
--  if (! is_url)
--    SVN_ERR(svn_path_cstring_to_utf8(&name_local, name_local, pool));
--#endif
--
++#if defined(DARWIN)
++  if (! is_url)
++    SVN_ERR(svn_path_cstring_to_utf8(&name_local, name_local, pool));
++#endif
++
    if (inherited_props)
      {
        int i;
 diff --git a/subversion/svn/status-cmd.c b/subversion/svn/status-cmd.c
-index 5abb4e7..7692eb3 100644
+index 7692eb3..5abb4e7 100644
 --- a/subversion/svn/status-cmd.c
 +++ b/subversion/svn/status-cmd.c
-@@ -114,10 +114,6 @@ print_start_target_xml(const char *target, apr_pool_t *pool)
+@@ -114,6 +114,10 @@ print_start_target_xml(const char *target, apr_pool_t *pool)
  {
    svn_stringbuf_t *sb = svn_stringbuf_create_empty(pool);
  
--#if defined(DARWIN)
--  SVN_ERR(svn_path_cstring_to_utf8(&target, target, pool));
--#endif
--
++#if defined(DARWIN)
++  SVN_ERR(svn_path_cstring_to_utf8(&target, target, pool));
++#endif
++
    svn_xml_make_open_tag(&sb, pool, svn_xml_normal, "target",
                          "path", target, SVN_VA_NULL);
  
